@@ -6,8 +6,13 @@ shs
 哈哈哈哈
 Beatifu biubiubiu
 
+<<<<<<< HEAD
 do it
 biu biu biu 
 handsome 
 hahah
 hello 
+=======
+do it 
+MyBranch
+>>>>>>> MyBranch
