@@ -1,0 +1,64 @@
+1、系统概述提示词：iwhereGIS网格数据引擎是一款基于Python语言开发的地理信息系统（GIS）软件，用于处理和分析地理空间数据。它提供了一系列功能，包括数据导入、数据查询、数据分析和数据可视化等，可以帮助用户更好地理解和管理地理空间数据。
+请为iwhereGIS网格数据引擎编写系统概述文档，包括：
+- 系统定位：无人机空域管理的三维网格数据引擎
+- 核心功能：16级网格编码、三维空间划分、空域属性管理
+- 技术特点：高精度地理编码、多层级网格体系、实时空域监控
+- 应用场景：无人机飞行路径规划、空域冲突检测、飞行许可管理
+2、网格编码系统提示词
+请详细说明iwhereGIS网格编码系统的技术规范：
+- 16级网格划分标准（从6°×4°到1/230400°×1/230400°）
+- 三维编码算法（经纬度+高程）
+- 编码格式规范（半球标识+网格编码+高程编码）
+- 精度等级对应关系（每级网格的实际物理尺寸）
+- 编码示例和验证方法
+3、API接口文档提示词
+请编写iwhereGIS网格数据引擎的API接口文档：
+- 网格生成接口：generate_grids(lon_min, lon_max, lat_min, lat_max, level, alt_min, alt_max)
+- 网格查询接口：get_grid_by_code(code)、get_grids_by_area()
+- 坐标编码接口：get_grid_code_by_coordinates(lon, lat, alt, level)
+- 属性管理接口：update_grid_attribute()、get_grid_attributes()
+- 路径规划接口：calculate_route_grids(waypoints, level)
+- 数据导入导出接口：export_to_json()、import_from_json()
+4、使用示例提示词
+请编写iwhereGIS网格数据引擎的API接口文档：
+- 网格生成接口：generate_grids(lon_min, lon_max, lat_min, lat_max, level, alt_min, alt_max)
+- 网格查询接口：get_grid_by_code(code)、get_grids_by_area()
+- 坐标编码接口：get_grid_code_by_coordinates(lon, lat, alt, level)
+- 属性管理接口：update_grid_attribute()、get_grid_attributes()
+- 路径规划接口：calculate_route_grids(waypoints, level)
+- 数据导入导出接口：export_to_json()、import_from_json()
+
+5、使用示例提示词
+请提供iwhereGIS网格数据引擎的详细使用示例：
+- 基础网格生成示例（指定区域和精度级别）
+- 网格编码查询示例（根据坐标获取网格编码）
+- 空域属性管理示例（设置飞行限制、天气信息等）
+- 飞行路径规划示例（计算路径覆盖的网格单元）
+- 数据持久化示例（保存和加载网格数据）
+- 性能优化示例（大规模网格数据处理）
+6、故障排除指南提示词
+请编写iwhereGIS网格数据引擎的故障排除指南：
+- 常见错误码和解决方案
+- 精度问题处理（浮点数计算误差）
+- 内存溢出问题（大规模网格生成）
+- 编码异常处理（边界条件、无效坐标）
+- 性能优化建议（网格缓存、批量处理）
+- 调试工具使用说明
+7、集成部署指南提示词
+请提供iwhereGIS网格数据引擎的集成部署指南：
+- 环境要求（Python版本、依赖库）
+- 安装配置步骤
+- 与现有系统集成方案
+- 数据库集成（网格数据存储）
+- 微服务架构部署
+- 容器化部署（Docker配置）
+- 性能监控和日志配置
+8、最佳实践提示词
+请提供iwhereGIS网格数据引擎的集成部署指南：
+- 环境要求（Python版本、依赖库）
+- 安装配置步骤
+- 与现有系统集成方案
+- 数据库集成（网格数据存储）
+- 微服务架构部署
+- 容器化部署（Docker配置）
+- 性能监控和日志配置
