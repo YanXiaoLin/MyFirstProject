@@ -338,7 +338,7 @@ window.onload = function() {
                         outline: true,
                         outlineColor: Cesium.Color.BLUE,
                         height: 0,
-                        extrudedHeight: grid.alt_range[1] - grid.alt_range[0]
+                        extrudedHeight: grid.alt_range[1] 
                     },
                     label: {
                         text: grid.code,
@@ -356,7 +356,7 @@ window.onload = function() {
                 
                 // 添加网格中心点
                 const centerEntity = viewer.entities.add({
-                    position: Cesium.Cartesian3.fromDegrees(center[0], center[1], grid.alt_range[0]),
+                    position: Cesium.Cartesian3.fromDegrees(center[0], center[1], grid.alt_range[0]+(grid.alt_range[1] - grid.alt_range[0])/2),
                     point: {
                         pixelSize: 5,
                         color: Cesium.Color.RED,

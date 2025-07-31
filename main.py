@@ -154,7 +154,7 @@ class GridEngineTester:
             grids = self.manager.generate_grids(
                 lon_min=114.0, lon_max=114.01,
                 lat_min=22.5, lat_max=22.51,
-                level=8, alt_min=0, alt_max=100
+                level=8, alt_min=0, alt_max=1000
             )
             
             if len(grids) == 0:
