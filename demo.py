@@ -146,9 +146,10 @@ def demo_route_planning():
         (114.08, 22.58, 150)   # 终点
     ]
     
-    grid_codes, sample_grid = manager.calculate_route_grids(waypoints, level=8)
+    grid_codes, route_grids = manager.calculate_route_grids(waypoints, level=8)
     print(f"✓ 航线经过 {len(grid_codes)} 个网格")
     print(f"✓ 第一个网格编码: {grid_codes[0] if grid_codes else 'N/A'}")
+    print(f"✓ 网格对象数量: {len(route_grids)}")
     
     # 多点航线规划
     print("\n计算多点航线网格...")
@@ -159,7 +160,7 @@ def demo_route_planning():
         (114.08, 22.58, 150)
     ]
     
-    multi_grid_codes, _ = manager.calculate_route_grids(multi_waypoints, level=8)
+    multi_grid_codes, multi_route_grids = manager.calculate_route_grids(multi_waypoints, level=8)
     print(f"✓ 多点航线经过 {len(multi_grid_codes)} 个网格")
 
 def demo_statistics():

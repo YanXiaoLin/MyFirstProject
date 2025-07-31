@@ -13,6 +13,7 @@ iwhereGIS 网格数据引擎是一个高性能的空域网格管理系统，支�
 - **航线规划**: 智能航线网格计算
 - **HTTP API**: 完整的RESTful API接口
 - **数据导入导出**: 支持JSON格式数据交换
+- **3D可视化**: 基于CesiumJS的网格和航线可视化展示
 
 ## 快速开始
 
@@ -50,6 +51,18 @@ python start_api.py
 start_api.bat
 ```
 
+### 5. 启动可视化系统
+
+```bash
+# 方法1: 使用Python脚本
+python start_visualization.py
+
+# 方法2: Windows用户双击
+start_visualization.bat
+```
+
+系统启动后会自动打开浏览器访问 `http://localhost:5000`，提供3D可视化界面。
+
 ## 项目结构
 
 ```
@@ -69,7 +82,12 @@ MyFirstProject/
 ├── API_TEST.md             # API测试文档
 ├── start_api.py            # 启动脚本
 ├── start_api.bat           # Windows启动脚本
-└── test_api.bat            # Windows测试脚本
+├── test_api.bat            # Windows测试脚本
+├── start_visualization.py  # 可视化系统启动脚本
+├── start_visualization.bat # Windows可视化启动脚本
+├── static/                 # 静态文件目录
+│   └── index.html          # Cesium可视化界面
+└── VISUALIZATION_GUIDE.md  # 可视化系统使用指南
 ```
 
 ## API接口
@@ -179,6 +197,33 @@ curl -X POST http://localhost:5000/api/grids/generate \
 ```
 
 详细API文档请参考 [README_API.md](README_API.md)
+
+## 可视化系统
+
+### 启动可视化
+
+```bash
+# 启动可视化系统
+python start_visualization.py
+```
+
+### 使用界面
+
+1. **设置参数**: 在左侧控制面板设置网格参数
+2. **生成网格**: 点击"生成网格"按钮创建网格
+3. **查看3D**: 在Cesium地球仪上查看网格
+4. **规划航线**: 点击"航线规划"按钮规划航线
+5. **交互操作**: 使用鼠标进行缩放、旋转、平移
+
+### 功能特性
+
+- **3D网格显示**: 在Cesium地球仪上显示空域网格
+- **实时网格生成**: 根据参数动态生成网格
+- **航线可视化**: 显示无人机航线路径
+- **网格信息**: 实时显示网格统计信息
+- **交互操作**: 支持3D地图交互
+
+详细使用指南请参考 [VISUALIZATION_GUIDE.md](VISUALIZATION_GUIDE.md)
 
 ## 测试
 

@@ -135,15 +135,13 @@ class AirspaceGridManager:
         # 导入属性
         self.attribute_manager.from_json(json.dumps(data["attributes"]))
 
-    def calculate_route_grids(self, waypoints: List[Tuple[float, float, float]], level: int = 8) -> Tuple[List[str], GridCell]:
+    def calculate_route_grids(self, waypoints: List[Tuple[float, float, float]], level: int = 8) -> Tuple[List[str], List[GridCell]]:
         """计算航线经过的网格"""
         point_cls = GridGenerator()
         visited_grids = set()
         result = []
-        all_points = []
-        all_points.append(waypoints[0])
+        route_grids = []
         
-     
         # 惠州空域边界
         lon_min = 113.7550
         lon_max = 114.6380  
@@ -176,7 +174,8 @@ class AirspaceGridManager:
         lon_starts = point_cls.generate_starts(lon_min, lon_max, lon_step)
         lat_starts = point_cls.generate_starts(lat_min, lat_max, lat_step)  
         
-        for lon, lat, alt in all_points:
+        # 处理所有航点
+        for lon, lat, alt in waypoints:
             # 计算经度索引
             relative_lon = lon - lon_starts[0]
             idx_lon = int(round(relative_lon / lon_step))  
@@ -252,11 +251,11 @@ class AirspaceGridManager:
             #point_grid.code = grid_code
 
             if point_grid.code not in visited_grids:
-
                 visited_grids.add(point_grid.code)
                 result.append(point_grid.code)
+                route_grids.append(point_grid)
         
-        return result, point_grid
+        return result, route_grids
 
 
 

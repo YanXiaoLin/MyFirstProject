@@ -4,18 +4,28 @@
 iwhereGIS 网格数据引擎 HTTP API 服务器
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import logging
+import os
 from airspace_grid.grid_manager import AirspaceGridManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 CORS(app)
 
 grid_manager = AirspaceGridManager()
+
+# 静态文件路由
+@app.route('/')
+def index():
+    return send_from_directory('static', 'index.html')
+
+@app.route('/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -188,14 +198,27 @@ def calculate_route_grids():
         waypoints = [(float(p[0]), float(p[1]), float(p[2])) for p in data['waypoints']]
         level = int(data.get('level', 8))
         
-        grid_codes, sample_grid = grid_manager.calculate_route_grids(
+        grid_codes, route_grids = grid_manager.calculate_route_grids(
             waypoints=waypoints, level=level
         )
+        
+        # 转换网格对象为可序列化的格式
+        route_grids_data = []
+        for grid in route_grids:
+            route_grids_data.append({
+                "code": grid.code,
+                "level": grid.level,
+                "bbox": grid.bbox,
+                "center": grid.center,
+                "alt_range": grid.alt_range,
+                "size": grid.size
+            })
         
         return jsonify({
             "success": True,
             "data": {
                 "grid_codes": grid_codes,
+                "route_grids": route_grids_data,
                 "count": len(grid_codes),
                 "waypoints": data['waypoints'],
                 "level": level

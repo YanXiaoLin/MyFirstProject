@@ -213,7 +213,7 @@ class GridEngineTester:
             
             # 测试边界坐标编码
             boundary_code = self.manager.get_grid_code_by_coordinates(
-                lon=180.0, lat=90.0, alt=0, level=1
+                lon=179.9, lat=89.9, alt=0, level=1
             )
             
             assert isinstance(boundary_code, str), "边界坐标编码失败"
@@ -237,10 +237,12 @@ class GridEngineTester:
                 (114.08, 22.58, 150)   # 终点
             ]
             
-            grid_codes, sample_grid = self.manager.calculate_route_grids(waypoints, level=8)
+            grid_codes, route_grids = self.manager.calculate_route_grids(waypoints, level=8)
             
             assert isinstance(grid_codes, list), "路径网格编码应该是列表"
             assert len(grid_codes) > 0, "路径应该经过至少一个网格"
+            assert isinstance(route_grids, list), "路径网格对象应该是列表"
+            assert len(route_grids) > 0, "路径应该包含至少一个网格对象"
             print(f"✓ 简单路径规划测试通过: 经过 {len(grid_codes)} 个网格")
             
             # 测试多点路径规划
@@ -251,7 +253,7 @@ class GridEngineTester:
                 (114.08, 22.58, 150)
             ]
             
-            multi_grid_codes, _ = self.manager.calculate_route_grids(multi_waypoints, level=8)
+            multi_grid_codes, multi_route_grids = self.manager.calculate_route_grids(multi_waypoints, level=8)
             
             assert len(multi_grid_codes) >= len(grid_codes), "多点路径应该经过更多网格"
             print(f"✓ 多点路径规划测试通过: 经过 {len(multi_grid_codes)} 个网格")

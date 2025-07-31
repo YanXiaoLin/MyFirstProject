@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iwhereGIS 网格数据引擎 - Cesium 可视化</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.111/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        
+        #cesiumContainer {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 350px;
+        }
+        
+        .control-panel h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            font-size: 12px;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .grid-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-width: 300px;
+            font-size: 12px;
+        }
+        
+        .grid-info h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .grid-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer">
+        <div class="control-panel">
+            <h3>网格数据引擎控制面板</h3>
+            
+            <div class="form-group">
+                <label>经度范围:</label>
+                <input type="number" id="lonMin" placeholder="最小经度" value="114.0" step="0.001">
+                <input type="number" id="lonMax" placeholder="最大经度" value="114.01" step="0.001">
+            </div>
+            
+            <div class="form-group">
+                <label>纬度范围:</label>
+                <input type="number" id="latMin" placeholder="最小纬度" value="22.5" step="0.001">
+                <input type="number" id="latMax" placeholder="最大纬度" value="22.51" step="0.001">
+            </div>
+            
+            <div class="form-group">
+                <label>高度范围 (米):</label>
+                <input type="number" id="altMin" placeholder="最小高度" value="0" step="10">
+                <input type="number" id="altMax" placeholder="最大高度" value="1000" step="10">
+            </div>
+            
+            <div class="form-group">
+                <label>网格级别:</label>
+                <select id="gridLevel">
+                    <option value="6">6级 (粗粒度)</option>
+                    <option value="7">7级 (中等粒度)</option>
+                    <option value="8" selected>8级 (细粒度)</option>
+                    <option value="9">9级 (超细粒度)</option>
+                </select>
+            </div>
+            
+            <button class="btn btn-success" onclick="generateGrids()">生成网格</button>
+            <button class="btn btn-warning" onclick="clearGrids()">清除网格</button>
+            <button class="btn" onclick="showRoutePlanning()">航线规划</button>
+            
+            <div id="status" class="status" style="display: none;"></div>
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+                <div>处理中...</div>
+            </div>
+        </div>
+        
+        <div class="grid-info" id="gridInfo" style="display: none;">
+            <h4>网格信息</h4>
+            <p>网格数量: <span id="gridCount">0</span></p>
+            <p>覆盖面积: <span id="gridArea">0</span> km²</p>
+            <p>平均大小: <span id="avgGridSize">0</span> m²</p>
+        </div>
+    </div>
+
+    <script>
+window.onload = function() {
+    // API 基础URL
+    const API_BASE_URL = 'http://localhost:5000/api';
+    let gridEntities = [];
+    let routeEntities = [];
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+        // imageryProvider: ... 可选
+            baseLayer: new Cesium.ImageryLayer(
+          new Cesium.UrlTemplateImageryProvider({
+            url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png',
+            maximumLevel: 18,
+          })
+        ),
+        homeButton: false,
+        sceneModePicker: false,
+        baseLayerPicker: false,
+        navigationHelpButton: false,
+        animation: false,
+        timeline: false,
+        fullscreenButton: false,
+        geocoder: false
+    });
+
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMTM4OTAxOS00NGE3LTQ0ZWQtYWY0MC0zZmE5NmU1NGQxMjQiLCJpZCI6Mjk2MzQwLCJpYXQiOjE3NTM5NjAwMzl9.T4p2BUv1kEq4BdZNGLM6LqsjWbxnhYKzt1BaBgY2aAw';
+        
+        // 设置初始视角到深圳
+        viewer.camera.setView({
+            destination: Cesium.Cartesian3.fromDegrees(114.0, 22.5, 50000),
+            orientation: {
+                heading: 0.0,
+                pitch: -Cesium.Math.PI_OVER_TWO,
+                roll: 0.0
+            }
+        });
+        
+        // 显示状态信息
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // 显示/隐藏加载状态
+        function setLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        // 生成网格
+        async function generateGrids() {
+            try {
+                setLoading(true);
+                showStatus('正在生成网格...', 'info');
+                
+                const data = {
+                    lon_min: parseFloat(document.getElementById('lonMin').value),
+                    lon_max: parseFloat(document.getElementById('lonMax').value),
+                    lat_min: parseFloat(document.getElementById('latMin').value),
+                    lat_max: parseFloat(document.getElementById('latMax').value),
+                    alt_min: parseFloat(document.getElementById('altMin').value),
+                    alt_max: parseFloat(document.getElementById('altMax').value),
+                    level: parseInt(document.getElementById('gridLevel').value)
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/grids/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    clearGrids();
+                    displayGrids(result.data.grids);
+                    updateGridInfo(result.data.grids);
+                    showStatus(`成功生成 ${result.data.count} 个网格`, 'success');
+                } else {
+                    throw new Error(result.error || '生成网格失败');
+                }
+                
+            } catch (error) {
+                console.error('生成网格错误:', error);
+                showStatus(`生成网格失败: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // 显示网格
+        function displayGrids(grids) {
+            grids.forEach(grid => {
+                const bbox = grid.bbox;
+                const center = grid.center;
+                
+                // 创建网格边界
+                const positions = [
+                    Cesium.Cartesian3.fromDegrees(bbox[0], bbox[1]),
+                    Cesium.Cartesian3.fromDegrees(bbox[2], bbox[1]),
+                    Cesium.Cartesian3.fromDegrees(bbox[2], bbox[3]),
+                    Cesium.Cartesian3.fromDegrees(bbox[0], bbox[3])
+                ];
+                
+                // 添加网格边界线
+                const boundaryEntity = viewer.entities.add({
+                    name: `网格 ${grid.code}`,
+                    polygon: {
+                        hierarchy: positions,
+                        material: Cesium.Color.BLUE.withAlpha(0.1),
+                        outline: true,
+                        outlineColor: Cesium.Color.BLUE,
+                        height: 0,
+                        extrudedHeight: grid.alt_range[1] - grid.alt_range[0]
+                    },
+                    label: {
+                        text: grid.code,
+                        font: '12px sans-serif',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 2,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        pixelOffset: new Cesium.Cartesian2(0, -10),
+                        position: Cesium.Cartesian3.fromDegrees(center[0], center[1], grid.alt_range[1])
+                    }
+                });
+                
+                gridEntities.push(boundaryEntity);
+                
+                // 添加网格中心点
+                const centerEntity = viewer.entities.add({
+                    position: Cesium.Cartesian3.fromDegrees(center[0], center[1], grid.alt_range[0]),
+                    point: {
+                        pixelSize: 5,
+                        color: Cesium.Color.RED,
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2
+                    }
+                });
+                
+                gridEntities.push(centerEntity);
+            });
+        }
+        
+        // 更新网格信息
+        function updateGridInfo(grids) {
+            const gridInfo = document.getElementById('gridInfo');
+            const gridCount = document.getElementById('gridCount');
+            const gridArea = document.getElementById('gridArea');
+            const avgGridSize = document.getElementById('avgGridSize');
+            
+            gridCount.textContent = grids.length;
+            
+            // 计算总面积
+            let totalArea = 0;
+            grids.forEach(grid => {
+                const bbox = grid.bbox;
+                const width = (bbox[2] - bbox[0]) * 111000; // 转换为米
+                const height = (bbox[3] - bbox[1]) * 111000;
+                totalArea += width * height;
+            });
+            
+            gridArea.textContent = (totalArea / 1000000).toFixed(2); // 转换为平方公里
+            avgGridSize.textContent = grids.length > 0 ? (totalArea / grids.length).toFixed(0) : 0;
+            
+            gridInfo.style.display = 'block';
+        }
+        
+        // 清除网格
+        function clearGrids() {
+            gridEntities.forEach(entity => {
+                viewer.entities.remove(entity);
+            });
+            gridEntities = [];
+            
+            routeEntities.forEach(entity => {
+                viewer.entities.remove(entity);
+            });
+            routeEntities = [];
+            
+            document.getElementById('gridInfo').style.display = 'none';
+            showStatus('已清除所有网格和航线', 'info');
+        }
+        
+        // 航线规划
+        function showRoutePlanning() {
+            const waypoints = prompt('请输入航点坐标 (格式: 经度,纬度,高度;经度,纬度,高度):\n例如: 114.05,22.55,100;114.08,22.58,150');
+            
+            if (waypoints) {
+                calculateRoute(waypoints);
+            }
+        }
+        
+        // 计算航线
+        async function calculateRoute(waypointsStr) {
+            try {
+                setLoading(true);
+                showStatus('正在计算航线...', 'info');
+                
+                const waypoints = waypointsStr.split(';').map(wp => {
+                    const coords = wp.split(',').map(Number);
+                    return coords;
+                });
+                
+                const data = {
+                    waypoints: waypoints,
+                    level: parseInt(document.getElementById('gridLevel').value)
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/grids/route`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayRoute(waypoints, result.data.grid_codes);
+                    showStatus(`航线规划完成，经过 ${result.data.count} 个网格`, 'success');
+                } else {
+                    throw new Error(result.error || '航线规划失败');
+                }
+                
+            } catch (error) {
+                console.error('航线规划错误:', error);
+                showStatus(`航线规划失败: ${error.message}`, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // 显示航线
+        function displayRoute(waypoints, gridCodes) {
+            // 清除之前的航线
+            routeEntities.forEach(entity => {
+                viewer.entities.remove(entity);
+            });
+            routeEntities = [];
+            
+            // 绘制航点连线
+            const positions = waypoints.map(wp => 
+                Cesium.Cartesian3.fromDegrees(wp[0], wp[1], wp[2])
+            );
+            
+            const routeEntity = viewer.entities.add({
+                name: '航线',
+                polyline: {
+                    positions: positions,
+                    width: 3,
+                    material: Cesium.Color.YELLOW,
+                    clampToGround: false
+                }
+            });
+            
+            routeEntities.push(routeEntity);
+            
+            // 添加航点标记
+            waypoints.forEach((wp, index) => {
+                const waypointEntity = viewer.entities.add({
+                    name: `航点 ${index + 1}`,
+                    position: Cesium.Cartesian3.fromDegrees(wp[0], wp[1], wp[2]),
+                    point: {
+                        pixelSize: 8,
+                        color: Cesium.Color.ORANGE,
+                        outlineColor: Cesium.Color.WHITE,
+                        outlineWidth: 2
+                    },
+                    label: {
+                        text: `WP${index + 1}`,
+                        font: '14px sans-serif',
+                        fillColor: Cesium.Color.WHITE,
+                        outlineColor: Cesium.Color.BLACK,
+                        outlineWidth: 2,
+                        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                        pixelOffset: new Cesium.Cartesian2(0, -15)
+                    }
+                });
+                
+                routeEntities.push(waypointEntity);
+            });
+            
+            // 高亮航线经过的网格
+            gridCodes.forEach(gridCode => {
+                const gridEntity = gridEntities.find(entity => 
+                    entity.name === `网格 ${gridCode}`
+                );
+                
+                if (gridEntity) {
+                    gridEntity.polygon.material = Cesium.Color.RED.withAlpha(0.3);
+                    gridEntity.polygon.outlineColor = Cesium.Color.RED;
+                }
+            });
+        }
+        
+        // 检查API连接
+        async function checkApiConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    showStatus('API 连接正常', 'success');
+                } else {
+                    showStatus('API 连接异常', 'error');
+                }
+            } catch (error) {
+                showStatus('无法连接到 API 服务器，请确保服务器已启动', 'error');
+            }
+        }
+        
+        // 页面加载完成后检查API连接
+        window.addEventListener('load', () => {
+            setTimeout(checkApiConnection, 1000);
+        });
+
+    // 导出全局函数供HTML按钮调用
+    window.generateGrids = generateGrids;
+    window.clearGrids = clearGrids;
+    window.showRoutePlanning = showRoutePlanning;
+};
+</script>
+</body>
+</html> 
