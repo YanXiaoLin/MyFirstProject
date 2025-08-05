@@ -257,6 +257,36 @@ def get_routes():
         return jsonify({'success': True, 'routes': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/routes/<route_name>/grids_risk', methods=['GET'])
+def get_route_grids_risk(route_name):
+    try:
+        # 读取waypoints文件
+        waypoints_path = os.path.join(os.path.dirname(__file__), 'data', 'routes', f'{route_name}_waypoints.json')
+        with open(waypoints_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        waypoints = data.get('waypoints', [])
+        # 统计所有经过的网格（去重）
+        grid_risk_map = {}
+        for wp in waypoints:
+            grid_cell = wp.get('grid_cell', {})
+            grid_code = grid_cell.get('code')
+            if grid_code and grid_code not in grid_risk_map:
+                # 查询风险
+                try:
+                    risk = risk_by_code(grid_code)
+                except Exception:
+                    risk = "未知"
+                grid_risk_map[grid_code] = {
+                    "code": grid_code,
+                    "center": grid_cell.get('center'),
+                    "bbox": grid_cell.get('bbox'),
+                    "alt_range": grid_cell.get('alt_range'),
+                    "risk_level": risk
+                }
+        return jsonify({"success": True, "grids": list(grid_risk_map.values())})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
     
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
@@ -271,4 +301,4 @@ def get_statistics():
 
 if __name__ == '__main__':
     print("iwhereGIS 网格数据引擎 HTTP API 服务器启动中...")
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+    app.run(host='0.0.0.0', port=5000, debug=True)

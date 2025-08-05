@@ -195,6 +195,8 @@
             <button class="btn btn-warning" onclick="clearGrids()">清除网格</button>
             <button class="btn" onclick="showRoutePlanning()">航线规划</button>
             <button class="btn" onclick="loadRoutes()">加载航线</button>
+            <button class="btn" onclick="loadRouteGridsWithRisk()">加载航线网格及风险</button>
+            <!-- 加载航线网格及风险按钮已存在 -->
             <hr>
             <h3>API 测试区</h3>
             <div class="form-group">
@@ -277,6 +279,77 @@ window.onload = function() {
         fullscreenButton: false,
         geocoder: false
     });
+
+    // 加载航线经过的所有网格及风险等级（修正版，兼容alt_range为空/异常情况）
+    window.loadRouteGridsWithRisk = async function() {
+        try {
+            setLoading(true);
+            showStatus('正在加载航线网格及风险...', 'info');
+            // 清除已加载的网格
+            gridEntities.forEach(entity => viewer.entities.remove(entity));
+            gridEntities = [];
+            // 这里以“航道1”为例
+            const resp = await fetch(`${API_BASE_URL}/routes/航道1/grids_risk`);
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || '航线网格数据获取失败');
+            data.grids.forEach(grid => {
+                const bbox = grid.bbox;
+                const center = grid.center;
+                // 兼容alt_range为null或undefined
+                let h0 = 0, h1 = 0;
+                if (Array.isArray(grid.alt_range) && grid.alt_range.length === 2) {
+                    h0 = Number(grid.alt_range[0]) || 0;
+                    h1 = Number(grid.alt_range[1]) || 0;
+                }
+                // 绘制网格
+                const positions = [
+                    Cesium.Cartesian3.fromDegrees(bbox[0], bbox[1]),
+                    Cesium.Cartesian3.fromDegrees(bbox[2], bbox[1]),
+                    Cesium.Cartesian3.fromDegrees(bbox[2], bbox[3]),
+                    Cesium.Cartesian3.fromDegrees(bbox[0], bbox[3])
+                ];
+                const entity = viewer.entities.add({
+                    name: `网格 ${grid.code}`,
+                    polygon: {
+                        hierarchy: positions,
+                        material: Cesium.Color.BLUE.withAlpha(0.2),
+                        outline: true,
+                        outlineColor: Cesium.Color.BLUE,
+                        height: h0,
+                        extrudedHeight: h1 > h0 ? h1 : h0 + 1 // 保证有厚度
+                    },
+                    properties: {
+                        gridCode: grid.code,
+                        riskLevel: grid.risk_level
+                    }
+                });
+                gridEntities.push(entity);
+                // 添加中心点
+                if (center && Array.isArray(center) && center.length === 2) {
+                    const cz = h0 + (h1 - h0) / 2;
+                    const centerEntity = viewer.entities.add({
+                        position: Cesium.Cartesian3.fromDegrees(center[0], center[1], cz),
+                        point: {
+                            pixelSize: 7,
+                            color: Cesium.Color.RED,
+                            outlineColor: Cesium.Color.WHITE,
+                            outlineWidth: 2
+                        },
+                        properties: {
+                            gridCode: grid.code,
+                            riskLevel: grid.risk_level
+                        }
+                    });
+                    gridEntities.push(centerEntity);
+                }
+            });
+            showStatus('航线网格及风险加载完成', 'success');
+        } catch (e) {
+            showStatus('航线网格加载失败: ' + e.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJlMTM4OTAxOS00NGE3LTQ0ZWQtYWY0MC0zZmE5NmU1NGQxMjQiLCJpZCI6Mjk2MzQwLCJpYXQiOjE3NTM5NjAwMzl9.T4p2BUv1kEq4BdZNGLM6LqsjWbxnhYKzt1BaBgY2aAw';
         
@@ -408,23 +481,62 @@ window.onload = function() {
                 gridEntities.push(centerEntity);
             });
         }
-        // 监听点击事件，展示网格风险等级
-        viewer.screenSpaceEventHandler.setInputAction(async function onLeftClick(movement) {
+        // 监听点击事件，展示网格编号和风险等级（优先显示已加载的风险信息）
+        // 鼠标悬停高亮并显示信息
+        let lastHighlighted = null;
+        let lastOutlineColor = null;
+        viewer.screenSpaceEventHandler.setInputAction(function onMouseMove(movement) {
+            const pickedObject = viewer.scene.pick(movement.endPosition || movement.position);
+            if (lastHighlighted && lastOutlineColor) {
+                // 恢复上一个高亮
+                if (lastHighlighted.polygon) lastHighlighted.polygon.outlineColor = lastOutlineColor;
+            }
+            lastHighlighted = null;
+            lastOutlineColor = null;
+            if (Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.properties && pickedObject.id.properties.gridCode) {
+                // 高亮边框
+                if (pickedObject.id.polygon) {
+                    lastHighlighted = pickedObject.id;
+                    lastOutlineColor = pickedObject.id.polygon.outlineColor;
+                    pickedObject.id.polygon.outlineColor = Cesium.Color.YELLOW;
+                }
+                // 聚焦到中心
+                let center = pickedObject.id.properties.center;
+                let alt_range = pickedObject.id.properties.altRange || pickedObject.id.properties.alt_range;
+                let cz = 0;
+                if (center && Array.isArray(center) && center.length === 2 && alt_range && Array.isArray(alt_range) && alt_range.length === 2) {
+                    cz = alt_range[0] + (alt_range[1] - alt_range[0]) / 2;
+                    viewer.camera.flyTo({
+                        destination: Cesium.Cartesian3.fromDegrees(center[0], center[1], cz + 200),
+                        duration: 0.8
+                    });
+                }
+                // 显示信息
+                const gridCode = pickedObject.id.properties.gridCode;
+                let riskLevel = pickedObject.id.properties.riskLevel;
+                if (riskLevel === undefined || riskLevel === null) riskLevel = '未知';
+                let info = `网格编码: ${gridCode}\n风险等级: ${riskLevel}`;
+                if (center) info += `\n中心经纬度: ${center[0].toFixed(6)}, ${center[1].toFixed(6)}`;
+                if (alt_range) info += `\n高程范围: ${alt_range[0]} ~ ${alt_range[1]} m`;
+                document.getElementById('selectedGridInfo').textContent = info;
+            } else {
+                document.getElementById('selectedGridInfo').textContent = '';
+            }
+        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
+
+        // 鼠标点击时也显示详细信息（与悬停一致）
+        viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
             const pickedObject = viewer.scene.pick(movement.position);
             if (Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.properties && pickedObject.id.properties.gridCode) {
                 const gridCode = pickedObject.id.properties.gridCode;
-                document.getElementById('selectedGridInfo').textContent = '正在查询风险等级...';
-                try {
-                    const resp = await fetch(`${API_BASE_URL}/grids/${gridCode}/risk`);
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        document.getElementById('selectedGridInfo').textContent = `选中网格: ${gridCode}\n风险等级: ${data.risk_level}`;
-                    } else {
-                        document.getElementById('selectedGridInfo').textContent = `选中网格: ${gridCode}\n风险等级查询失败`;
-                    }
-                } catch {
-                    document.getElementById('selectedGridInfo').textContent = `选中网格: ${gridCode}\n风险等级查询异常`;
-                }
+                let riskLevel = pickedObject.id.properties.riskLevel;
+                if (riskLevel === undefined || riskLevel === null) riskLevel = '未知';
+                let center = pickedObject.id.properties.center;
+                let alt_range = pickedObject.id.properties.altRange || pickedObject.id.properties.alt_range;
+                let info = `网格编码: ${gridCode}\n风险等级: ${riskLevel}`;
+                if (center) info += `\n中心经纬度: ${center[0].toFixed(6)}, ${center[1].toFixed(6)}`;
+                if (alt_range) info += `\n高程范围: ${alt_range[0]} ~ ${alt_range[1]} m`;
+                document.getElementById('selectedGridInfo').textContent = info;
             } else {
                 document.getElementById('selectedGridInfo').textContent = '';
             }

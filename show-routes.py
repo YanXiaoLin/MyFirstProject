@@ -458,7 +458,7 @@ def main():
         return
     
     # 可视化采样后的3D航线（航道1）
-    visualize_sampled_3d_with_grids(data, "航道2", level=11)
+    visualize_sampled_3d_with_grids(data, "航道1", level=11)
 
 if __name__ == "__main__":
     main()
