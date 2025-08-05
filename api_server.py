@@ -1,9 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-iwhereGIS 网格数据引擎 HTTP API 服务器
-"""
-
+from risk_assessment import risk_by_code
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import logging
@@ -34,7 +29,18 @@ def health_check():
         "service": "iwhereGIS Grid Engine API",
         "version": "1.0.0"
     })
+# 网格风险等级接口
+@app.route('/api/grids/<grid_code>/risk', methods=['GET'])
+def get_grid_risk(grid_code: str):
+    try:
+        risk = risk_by_code(grid_code)
+        return jsonify({"success": True, "grid_code": grid_code, "risk_level": risk})
+    except Exception as e:
+        return jsonify({"error": f"服务器内部错误: {str(e)}"}), 500
 
+"""
+iwhereGIS 网格数据引擎 HTTP API 服务器
+"""
 @app.route('/api/grids/generate', methods=['POST'])
 def generate_grids():
     try:

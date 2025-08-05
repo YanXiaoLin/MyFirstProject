@@ -167,25 +167,21 @@
     <div id="cesiumContainer">
         <div class="control-panel">
             <h3>网格数据引擎控制面板</h3>
-            
             <div class="form-group">
                 <label>经度范围:</label>
                 <input type="number" id="lonMin" placeholder="最小经度" value="114.0" step="0.001">
                 <input type="number" id="lonMax" placeholder="最大经度" value="114.01" step="0.001">
             </div>
-            
             <div class="form-group">
                 <label>纬度范围:</label>
                 <input type="number" id="latMin" placeholder="最小纬度" value="22.5" step="0.001">
                 <input type="number" id="latMax" placeholder="最大纬度" value="22.51" step="0.001">
             </div>
-            
             <div class="form-group">
                 <label>高度范围 (米):</label>
                 <input type="number" id="altMin" placeholder="最小高度" value="0" step="10">
                 <input type="number" id="altMax" placeholder="最大高度" value="1000" step="10">
             </div>
-            
             <div class="form-group">
                 <label>网格级别:</label>
                 <select id="gridLevel">
@@ -195,11 +191,51 @@
                     <option value="9">9级 (超细粒度)</option>
                 </select>
             </div>
-            
             <button class="btn btn-success" onclick="generateGrids()">生成网格</button>
             <button class="btn btn-warning" onclick="clearGrids()">清除网格</button>
             <button class="btn" onclick="showRoutePlanning()">航线规划</button>
-            
+            <hr>
+            <h3>API 测试区</h3>
+            <div class="form-group">
+                <button class="btn" onclick="healthCheck()">健康检查</button>
+                <span id="healthResult"></span>
+            </div>
+            <div class="form-group">
+                <label>网格编码查询:</label>
+                <input type="text" id="queryGridCode" placeholder="输入网格编码">
+                <button class="btn" onclick="queryGrid()">查询</button>
+                <pre id="queryGridResult"></pre>
+            </div>
+            <div class="form-group">
+                <label>坐标编码:</label>
+                <input type="number" id="encodeLon" placeholder="经度" step="0.0001">
+                <input type="number" id="encodeLat" placeholder="纬度" step="0.0001">
+                <input type="number" id="encodeAlt" placeholder="高程" step="1">
+                <input type="number" id="encodeLevel" placeholder="级别" value="8" min="1" max="16">
+                <button class="btn" onclick="encodeCoord()">编码</button>
+                <pre id="encodeResult"></pre>
+            </div>
+            <div class="form-group">
+                <label>更新属性:</label>
+                <input type="text" id="attrGridCode" placeholder="网格编码">
+                <input type="text" id="attrCategory" placeholder="属性类别">
+                <input type="text" id="attrKey" placeholder="属性名">
+                <input type="text" id="attrValue" placeholder="属性值">
+                <button class="btn" onclick="updateAttribute()">更新</button>
+                <pre id="updateAttrResult"></pre>
+            </div>
+            <div class="form-group">
+                <label>网格搜索:</label>
+                <input type="text" id="searchCategory" placeholder="属性类别">
+                <input type="text" id="searchKey" placeholder="属性名">
+                <input type="text" id="searchValue" placeholder="属性值">
+                <button class="btn" onclick="searchGrids()">搜索</button>
+                <pre id="searchResult"></pre>
+            </div>
+            <div class="form-group">
+                <button class="btn" onclick="getStatistics()">统计信息</button>
+                <pre id="statResult"></pre>
+            </div>
             <div id="status" class="status" style="display: none;"></div>
             <div id="loading" class="loading">
                 <div class="spinner"></div>
@@ -212,6 +248,7 @@
             <p>网格数量: <span id="gridCount">0</span></p>
             <p>覆盖面积: <span id="gridArea">0</span> km²</p>
             <p>平均大小: <span id="avgGridSize">0</span> m²</p>
+            <div id="selectedGridInfo" style="margin-top:10px;"></div>
         </div>
     </div>
 
@@ -320,7 +357,6 @@ window.onload = function() {
             grids.forEach(grid => {
                 const bbox = grid.bbox;
                 const center = grid.center;
-                
                 // 创建网格边界
                 const positions = [
                     Cesium.Cartesian3.fromDegrees(bbox[0], bbox[1]),
@@ -328,7 +364,6 @@ window.onload = function() {
                     Cesium.Cartesian3.fromDegrees(bbox[2], bbox[3]),
                     Cesium.Cartesian3.fromDegrees(bbox[0], bbox[3])
                 ];
-                
                 // 添加网格边界线
                 const boundaryEntity = viewer.entities.add({
                     name: `网格 ${grid.code}`,
@@ -349,11 +384,12 @@ window.onload = function() {
                         style: Cesium.LabelStyle.FILL_AND_OUTLINE,
                         pixelOffset: new Cesium.Cartesian2(0, -10),
                         position: Cesium.Cartesian3.fromDegrees(center[0], center[1], grid.alt_range[1])
+                    },
+                    properties: {
+                        gridCode: grid.code
                     }
                 });
-                
                 gridEntities.push(boundaryEntity);
-                
                 // 添加网格中心点
                 const centerEntity = viewer.entities.add({
                     position: Cesium.Cartesian3.fromDegrees(center[0], center[1], grid.alt_range[0]+(grid.alt_range[1] - grid.alt_range[0])/2),
@@ -362,12 +398,35 @@ window.onload = function() {
                         color: Cesium.Color.RED,
                         outlineColor: Cesium.Color.WHITE,
                         outlineWidth: 2
+                    },
+                    properties: {
+                        gridCode: grid.code
                     }
                 });
-                
                 gridEntities.push(centerEntity);
             });
         }
+        // 监听点击事件，展示网格风险等级
+        viewer.screenSpaceEventHandler.setInputAction(async function onLeftClick(movement) {
+            const pickedObject = viewer.scene.pick(movement.position);
+            if (Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.properties && pickedObject.id.properties.gridCode) {
+                const gridCode = pickedObject.id.properties.gridCode;
+                document.getElementById('selectedGridInfo').textContent = '正在查询风险等级...';
+                try {
+                    const resp = await fetch(`${API_BASE_URL}/grids/${gridCode}/risk`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        document.getElementById('selectedGridInfo').textContent = `选中网格: ${gridCode}\n风险等级: ${data.risk_level}`;
+                    } else {
+                        document.getElementById('selectedGridInfo').textContent = `选中网格: ${gridCode}\n风险等级查询失败`;
+                    }
+                } catch {
+                    document.getElementById('selectedGridInfo').textContent = `选中网格: ${gridCode}\n风险等级查询异常`;
+                }
+            } else {
+                document.getElementById('selectedGridInfo').textContent = '';
+            }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
         
         // 更新网格信息
         function updateGridInfo(grids) {
@@ -545,6 +604,83 @@ window.onload = function() {
             setTimeout(checkApiConnection, 1000);
         });
 
+    // API测试区相关函数
+    window.healthCheck = async function() {
+        try {
+            const resp = await fetch(`${API_BASE_URL}/health`);
+            document.getElementById('healthResult').textContent = resp.ok ? '正常' : '异常';
+        } catch {
+            document.getElementById('healthResult').textContent = '无法连接';
+        }
+    };
+    window.queryGrid = async function() {
+        const code = document.getElementById('queryGridCode').value;
+        if (!code) return;
+        try {
+            const resp = await fetch(`${API_BASE_URL}/grids/${code}`);
+            document.getElementById('queryGridResult').textContent = await resp.text();
+        } catch (e) {
+            document.getElementById('queryGridResult').textContent = '查询失败';
+        }
+    };
+    window.encodeCoord = async function() {
+        const lon = parseFloat(document.getElementById('encodeLon').value);
+        const lat = parseFloat(document.getElementById('encodeLat').value);
+        const alt = parseFloat(document.getElementById('encodeAlt').value);
+        const level = parseInt(document.getElementById('encodeLevel').value);
+        if (isNaN(lon) || isNaN(lat) || isNaN(alt) || isNaN(level)) return;
+        try {
+            const resp = await fetch(`${API_BASE_URL}/grids/encode`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ lon, lat, alt, level })
+            });
+            document.getElementById('encodeResult').textContent = await resp.text();
+        } catch (e) {
+            document.getElementById('encodeResult').textContent = '编码失败';
+        }
+    };
+    window.updateAttribute = async function() {
+        const code = document.getElementById('attrGridCode').value;
+        const category = document.getElementById('attrCategory').value;
+        const key = document.getElementById('attrKey').value;
+        const value = document.getElementById('attrValue').value;
+        if (!code || !category || !key || !value) return;
+        try {
+            const resp = await fetch(`${API_BASE_URL}/grids/${code}/attributes`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, key, value })
+            });
+            document.getElementById('updateAttrResult').textContent = await resp.text();
+        } catch (e) {
+            document.getElementById('updateAttrResult').textContent = '更新失败';
+        }
+    };
+    window.searchGrids = async function() {
+        const category = document.getElementById('searchCategory').value;
+        const key = document.getElementById('searchKey').value;
+        const value = document.getElementById('searchValue').value;
+        if (!category || !key || !value) return;
+        try {
+            const resp = await fetch(`${API_BASE_URL}/grids/search`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, key, value })
+            });
+            document.getElementById('searchResult').textContent = await resp.text();
+        } catch (e) {
+            document.getElementById('searchResult').textContent = '搜索失败';
+        }
+    };
+    window.getStatistics = async function() {
+        try {
+            const resp = await fetch(`${API_BASE_URL}/statistics`);
+            document.getElementById('statResult').textContent = await resp.text();
+        } catch (e) {
+            document.getElementById('statResult').textContent = '获取失败';
+        }
+    };
     // 导出全局函数供HTML按钮调用
     window.generateGrids = generateGrids;
     window.clearGrids = clearGrids;
