@@ -1,0 +1,284 @@
+{
+    "code": 0,
+    "msg": "ok",
+    "data": {
+        "route": {
+            "id": "458150199427073",
+            "name": "M",
+            "code": "39b2fe30-839c-4d12-882e-06f46693f273",
+            "communication_facility": [
+                {
+                    "id": "456186037534721",
+                    "name": "VHF甚高频通信设备",
+                    "type": 1
+                }
+            ],
+            "navigation_facility": [
+                {
+                    "id": "456186037536001",
+                    "name": "ILS仪表着陆系统",
+                    "type": 2
+                }
+            ],
+            "monitoring_facility": [
+                {
+                    "id": "456186037797889",
+                    "name": "一次雷达监视设备",
+                    "type": 3
+                }
+            ],
+            "meteorological_facility": [
+                {
+                    "id": "456186037799169",
+                    "name": "自动气象观测站",
+                    "type": 4
+                }
+            ],
+            "geometry": [
+                {
+                    "coordinates": [
+                        113.7930359,
+                        22.6538527,
+                        2.55
+                    ]
+                },
+                {
+                    "coordinates": [
+                        113.7930359,
+                        22.6538527,
+                        252.55
+                    ]
+                },
+                {
+                    "coordinates": [
+                        113.7986461,
+                        22.6437935,
+                        252.55
+                    ]
+                },
+                {
+                    "coordinates": [
+                        113.8175847,
+                        22.6498784,
+                        252.55
+                    ]
+                },
+                {
+                    "coordinates": [
+                        113.8178709,
+                        22.6498311,
+                        252.55
+                    ]
+                },
+                {
+                    "coordinates": [
+                        113.8176861,
+                        22.6489555,
+                        252.55
+                    ]
+                },
+                {
+                    "coordinates": [
+                        113.8176861,
+                        22.6489555,
+                        3.34
+                    ]
+                }
+            ],
+            "schedule": {
+                "start_date": 1750205800,
+                "end_date": 1787703400,
+                "repeat_type": 2,
+                "month_days": [
+                    1,
+                    2,
+                    3
+                ],
+                "week_days": [],
+                "occupied_times": [
+                    {
+                        "start_time": 13661,
+                        "end_time": 16271
+                    }
+                ]
+            },
+            "desc": "",
+            "risk_level": 1,
+            "status": 2,
+            "radius": 15,
+            "channels": [
+                {
+                    "id": "458150199689217",
+                    "name": "航道1",
+                    "radius": 2,
+                    "aircraft_model": 1,
+                    "level": 1,
+                    "points": [
+                        {
+                            "id": "458150199696385",
+                            "channel_id": "458150199689217",
+                            "num": 1,
+                            "geometry": {
+                                "coordinates": [
+                                    113.7930359,
+                                    22.6538927,
+                                    0
+                                ]
+                            },
+                            "entrance_exit": 2,
+                            "is_merge": true
+                        },
+                        {
+                            "id": "458150199696641",
+                            "channel_id": "458150199689217",
+                            "num": 2,
+                            "geometry": {
+                                "coordinates": [
+                                    113.7930359,
+                                    22.6538927,
+                                    237.55
+                                ]
+                            },
+                            "entrance_exit": 0,
+                            "is_merge": false
+                        },
+                        {
+                            "id": "458150199696897",
+                            "channel_id": "458150199689217",
+                            "num": 3,
+                            "geometry": {
+                                "coordinates": [
+                                    113.7986461,
+                                    22.6438335,
+                                    237.55
+                                ]
+                            },
+                            "entrance_exit": 0,
+                            "is_merge": false
+                        },
+                        {
+                            "id": "458150199697153",
+                            "channel_id": "458150199689217",
+                            "num": 4,
+                            "geometry": {
+                                "coordinates": [
+                                    113.8175847,
+                                    22.649918399999997,
+                                    237.55
+                                ]
+                            },
+                            "entrance_exit": 0,
+                            "is_merge": false
+                        },
+                        {
+                            "id": "458150199697409",
+                            "channel_id": "458150199689217",
+                            "num": 5,
+                            "geometry": {
+                                "coordinates": [
+                                    113.8178709,
+                                    22.6498711,
+                                    237.55
+                                ]
+                            },
+                            "entrance_exit": 0,
+                            "is_merge": false
+                        },
+                        {
+                            "id": "458150199697665",
+                            "channel_id": "458150199689217",
+                            "num": 6,
+                            "geometry": {
+                                "coordinates": [
+                                    113.8176861,
+                                    22.648995499999998,
+                                    237.55
+                                ]
+                            },
+                            "entrance_exit": 0,
+                            "is_merge": false
+                        },
+                        {
+                            "id": "458150199697921",
+                            "channel_id": "458150199689217",
+                            "num": 7,
+                            "geometry": {
+                                "coordinates": [
+                                    113.8176861,
+                                    22.648995499999998,
+                                    0
+                                ]
+                            },
+                            "entrance_exit": 1,
+                            "is_merge": true
+                        }
+                    ],
+                    "segments": [
+                        {
+                            "id": "458150199690241",
+                            "channel_id": "",
+                            "points": [
+                                1,
+                                2
+                            ],
+                            "speed": 50,
+                            "number": 0
+                        },
+                        {
+                            "id": "458150199690497",
+                            "channel_id": "",
+                            "points": [
+                                2,
+                                3
+                            ],
+                            "speed": 50,
+                            "number": 0
+                        },
+                        {
+                            "id": "458150199690753",
+                            "channel_id": "",
+                            "points": [
+                                3,
+                                4
+                            ],
+                            "speed": 50,
+                            "number": 0
+                        },
+                        {
+                            "id": "458150199691009",
+                            "channel_id": "",
+                            "points": [
+                                4,
+                                5
+                            ],
+                            "speed": 50,
+                            "number": 0
+                        },
+                        {
+                            "id": "458150199691265",
+                            "channel_id": "",
+                            "points": [
+                                5,
+                                6
+                            ],
+                            "speed": 50,
+                            "number": 0
+                        },
+                        {
+                            "id": "458150199691521",
+                            "channel_id": "",
+                            "points": [
+                                6,
+                                7
+                            ],
+                            "speed": 50,
+                            "number": 0
+                        }
+                    ]
+                }
+      
+            ],
+            "height_reference": 1
+        }
+    }
+}

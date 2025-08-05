@@ -1,3 +1,4 @@
+import json
 from risk_assessment import risk_by_code
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -233,6 +234,30 @@ def calculate_route_grids():
     except Exception as e:
         return jsonify({"error": f"服务器内部错误: {str(e)}"}), 500
 
+# 加载航线数据接口
+@app.route('/api/routes', methods=['GET'])
+def get_routes():
+    try:
+        route_path = os.path.join(os.path.dirname(__file__), 'data', 'routes', 'route.json')
+        with open(route_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        # 兼容结构，提取所有channels
+        route = data.get('data', {}).get('route', {})
+        channels = route.get('channels', [])
+        result = []
+        for ch in channels:
+            points = [pt['geometry']['coordinates'] for pt in ch.get('points', [])]
+            name = ch.get('name', '')
+            ch_id = ch.get('id', '')
+            result.append({
+                'id': ch_id,
+                'name': name,
+                'points': points
+            })
+        return jsonify({'success': True, 'routes': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
     try:

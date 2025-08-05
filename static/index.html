@@ -194,6 +194,7 @@
             <button class="btn btn-success" onclick="generateGrids()">生成网格</button>
             <button class="btn btn-warning" onclick="clearGrids()">清除网格</button>
             <button class="btn" onclick="showRoutePlanning()">航线规划</button>
+            <button class="btn" onclick="loadRoutes()">加载航线</button>
             <hr>
             <h3>API 测试区</h3>
             <div class="form-group">
@@ -254,6 +255,7 @@
 
     <script>
 window.onload = function() {
+    let loadedRouteEntities = [];
     // API 基础URL
     const API_BASE_URL = 'http://localhost:5000/api';
     let gridEntities = [];
@@ -604,6 +606,63 @@ window.onload = function() {
             setTimeout(checkApiConnection, 1000);
         });
 
+    // 加载航线并展示
+    window.loadRoutes = async function() {
+        try {
+            setLoading(true);
+            showStatus('正在加载航线...', 'info');
+            // 清除已加载的航线
+            loadedRouteEntities.forEach(entity => viewer.entities.remove(entity));
+            loadedRouteEntities = [];
+            const resp = await fetch(`${API_BASE_URL}/routes`);
+            const data = await resp.json();
+            if (!data.success) throw new Error(data.error || '航线数据获取失败');
+            data.routes.forEach(route => {
+                if (route.points && route.points.length > 1) {
+                    // 画polyline
+                    const positions = route.points.map(pt => Cesium.Cartesian3.fromDegrees(pt[0], pt[1], pt[2]));
+                    const entity = viewer.entities.add({
+                        name: `航线-${route.name}`,
+                        polyline: {
+                            positions: positions,
+                            width: 4,
+                            material: Cesium.Color.ORANGE,
+                            clampToGround: false
+                        },
+                        description: `航线名称: ${route.name}`
+                    });
+                    loadedRouteEntities.push(entity);
+                    // 画航点
+                    route.points.forEach((pt, idx) => {
+                        const wpEntity = viewer.entities.add({
+                            position: Cesium.Cartesian3.fromDegrees(pt[0], pt[1], pt[2]),
+                            point: {
+                                pixelSize: 8,
+                                color: Cesium.Color.PURPLE,
+                                outlineColor: Cesium.Color.WHITE,
+                                outlineWidth: 2
+                            },
+                            label: {
+                                text: `R${route.name}-P${idx+1}`,
+                                font: '12px sans-serif',
+                                fillColor: Cesium.Color.PURPLE,
+                                outlineColor: Cesium.Color.WHITE,
+                                outlineWidth: 2,
+                                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                                pixelOffset: new Cesium.Cartesian2(0, -15)
+                            }
+                        });
+                        loadedRouteEntities.push(wpEntity);
+                    });
+                }
+            });
+            showStatus('航线加载完成', 'success');
+        } catch (e) {
+            showStatus('航线加载失败: ' + e.message, 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
     // API测试区相关函数
     window.healthCheck = async function() {
         try {
