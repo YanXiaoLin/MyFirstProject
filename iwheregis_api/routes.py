@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any, Dict, List
 
 from flask import Blueprint, current_app, jsonify, request, send_from_directory
-
-from risk_assessment import risk_by_code
 
 
 bp = Blueprint("api", __name__)
@@ -41,6 +40,7 @@ def health_check():
 @bp.route("/api/grids/<grid_code>/risk", methods=["GET"]) 
 def get_grid_risk(grid_code: str):
     try:
+        from risk_assessment import risk_by_code  # lazy import to avoid heavy deps at startup
         risk = risk_by_code(grid_code)
         return jsonify({"success": True, "grid_code": grid_code, "risk_level": risk})
     except Exception as exc:  # noqa: BLE001
@@ -86,19 +86,38 @@ def generate_grids():
 @bp.route("/api/grids/<grid_code>", methods=["GET"]) 
 def get_grid_by_code(grid_code: str):
     try:
-        grid = _grid_manager().get_grid_by_code(grid_code)
-        if grid is None:
+        decoded = _grid_manager().get_grid_by_code(grid_code)
+        if decoded is None:
             return jsonify({"error": f"未找到网格: {grid_code}"}), 404
+
+        min_lon = decoded.bounds.get("min_lon", 0.0)
+        max_lon = decoded.bounds.get("max_lon", 0.0)
+        min_lat = decoded.bounds.get("min_lat", 0.0)
+        max_lat = decoded.bounds.get("max_lat", 0.0)
+
+        bbox = [min_lon, min_lat, max_lon, max_lat]
+        center = decoded.center
+        alt_range = decoded.alt_range
+
+        # Approximate grid size in kilometers based on center latitude
+        # 1 degree latitude ~ 111.32 km; 1 degree longitude ~ 111.32 * cos(lat)
+        lat_km_per_deg = 111.32
+        lon_km_per_deg = 111.32 * math.cos(math.radians(center[1])) if center else 111.32
+        size = {
+            "lon": round((max_lon - min_lon) * lon_km_per_deg, 5),
+            "lat": round((max_lat - min_lat) * lat_km_per_deg, 5),
+            "unit": "km",
+        }
 
         return jsonify({
             "success": True,
             "data": {
-                "code": grid.code,
-                "level": grid.level,
-                "bbox": grid.bbox,
-                "center": grid.center,
-                "size": grid.size,
-                "alt_range": grid.alt_range,
+                "code": grid_code,
+                "level": decoded.level,
+                "bbox": bbox,
+                "center": center,
+                "size": size,
+                "alt_range": alt_range,
             },
         })
     except Exception as exc:  # noqa: BLE001
@@ -258,6 +277,7 @@ def get_routes():
 @bp.route("/api/routes/<route_name>/grids_risk", methods=["GET"]) 
 def get_route_grids_risk(route_name: str):
     try:
+        from risk_assessment import risk_by_code  # lazy import to avoid heavy deps at startup
         data_dir = Path(current_app.config.get("DATA_DIR", Path(current_app.config["PROJECT_ROOT"]) / "data"))
         waypoints_path = data_dir / "routes" / f"{route_name}_waypoints.json"
         with waypoints_path.open("r", encoding="utf-8") as f:
