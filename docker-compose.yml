@@ -1,0 +1,133 @@
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build: .
+    container_name: iwheregis-app
+    ports:
+      - "${PORT:-5000}:5000"
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - APP_NAME=iwhereGIS Grid Engine
+      - APP_VERSION=2.0.0
+      - HOST=0.0.0.0
+      - PORT=5000
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CORS_ENABLED=true
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - REDIS_URL=redis://redis:6379/0
+      - API_PREFIX=/api/v1
+      - CACHE_ENABLED=true
+      - CACHE_TTL=300
+    volumes:
+      - ./data:/app/data:ro
+      - ./logs:/app/logs
+      - ./exports:/app/exports
+    depends_on:
+      - redis
+    networks:
+      - iwheregis-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: iwheregis-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - iwheregis-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # Nginx reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: iwheregis-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./static:/usr/share/nginx/html:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - app
+    networks:
+      - iwheregis-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+
+  # PostgreSQL database (for future use)
+  # postgres:
+  #   image: postgis/postgis:15-3.3-alpine
+  #   container_name: iwheregis-postgres
+  #   environment:
+  #     - POSTGRES_DB=${DB_NAME:-iwheregis}
+  #     - POSTGRES_USER=${DB_USER:-iwheregis}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+  #   ports:
+  #     - "${DB_PORT:-5432}:5432"
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   networks:
+  #     - iwheregis-network
+  #   restart: unless-stopped
+
+  # Monitoring with Prometheus (optional)
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: iwheregis-prometheus
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+  #     - prometheus-data:/prometheus
+  #   ports:
+  #     - "${PROMETHEUS_PORT:-9090}:9090"
+  #   networks:
+  #     - iwheregis-network
+  #   restart: unless-stopped
+
+  # Grafana for visualization (optional)
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: iwheregis-grafana
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   ports:
+  #     - "${GRAFANA_PORT:-3000}:3000"
+  #   networks:
+  #     - iwheregis-network
+  #   restart: unless-stopped
+
+networks:
+  iwheregis-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
