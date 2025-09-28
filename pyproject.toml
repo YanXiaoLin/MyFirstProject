@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iwheregis-grid-engine"
+version = "1.0.0"
+description = "iwhereGIS airspace grid engine with HTTP API"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "iwhereGIS", email = "maintainers@example.com" }]
+keywords = ["flask", "api", "grid", "gis", "airspace"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Framework :: Flask",
+]
+
+dependencies = [
+  "Flask==2.3.3",
+  "Flask-CORS==4.0.0",
+  "Werkzeug==2.3.7",
+  "requests==2.31.0",
+  "python-dotenv>=1.0.0",
+]
+
+[project.scripts]
+iwheregis-api = "iwheregis_api.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["airspace_grid*", "iwheregis_api*"]
